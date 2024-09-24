@@ -1,0 +1,33 @@
+services:
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - "4566:4566" # LocalStack gateway
+    environment:
+      - SERVICES=sqs,lambda
+      - DEBUG=1
+      - LAMBDA_EXECUTOR=docker
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock" # Needed for Docker Lambda execution
+
+  action-builder-service:
+    build: ../action-builder-service # Path to the Action Builder repo
+    container_name: action-builder
+    ports:
+      - "3000:3000"
+    environment:
+      - AWS_REGION=eu-central-1
+      - QUEUE_URL=http://localstack:4566/000000000000/NotificationQueue
+    depends_on:
+      - localstack
+
+  notification-service:
+    build: ../notification-service # Path to the Notification Service repo
+    container_name: notification-service
+    ports:
+      - "3001:3001"
+    environment:
+      - AWS_REGION=eu-central-1
+    depends_on:
+      - localstack
